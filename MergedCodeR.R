@@ -6,6 +6,8 @@ library(e1071)
 library("Hmisc")
 library(C50)
 library(klaR)
+library(randomForest)
+library(kernlab)
 
 #ONLY RUN ONCE!!!! 
 #create table to gather the complexity metrics
@@ -62,10 +64,18 @@ NBModel <- naive_Bayes() %>%
 NNModel <- mlp() %>%
   set_mode("classification") %>%
   set_engine("nnet")
+RFModel <- rand_forest() %>% 
+  set_mode("classification") %>% 
+  set_engine("randomForest")
+SVMModel <- svm_poly() %>% 
+  set_mode("classification") %>% 
+  set_engine("kernlab")
 
 C50Fit <- fit(C50Model, bugbinary ~ ., data = trainingSet_processed)
 NBFit <- fit(NBModel, bugbinary ~ ., data = trainingSet_processed)
 NNFit <- fit(NNModel, bugbinary ~ ., data = trainingSet_processed)
+RFFit <- fit(RFModel, bugbinary ~ ., data = trainingSet_processed)
+SVMFit <- fit(SVMModel, bugbinary ~ ., data = trainingSet_processed)
 
 #yardstick to evaluate performance
 set.seed(713)
@@ -102,10 +112,28 @@ NN_final <- data_wf %>%
   add_model(NNModel) %>%
   last_fit(trainIndex)
 NNperformance2 <- collect_metrics(NN_final)
+#RF
+RFclassWithPredictions <- testSet_processed %>%
+  dplyr::select(bugbinary) %>%
+  bind_cols(predict(RFFit, testSet_processed))
+RFperformance1 <- metricsSet(RFclassWithPredictions, truth = bugbinary, estimate = .pred_class, event_level = "first")
+RF_final <- data_wf %>%
+  add_model(RFModel) %>%
+  last_fit(trainIndex)
+RFperformance2 <- collect_metrics(RF_final)
+#SVM
+SVMclassWithPredictions <- testSet_processed %>%
+  dplyr::select(bugbinary) %>%
+  bind_cols(predict(SVMFit, testSet_processed))
+SVMperformance1 <- metricsSet(SVMclassWithPredictions, truth = bugbinary, estimate = .pred_class, event_level = "first")
+SVM_final <- data_wf %>%
+  add_model(SVMModel) %>%
+  last_fit(trainIndex)
+SVMperformance2 <- collect_metrics(SVM_final)
 
 #store performance metrics in table
 
-tab2[nrow(tab2)+1,] = c(nrow(tab2)+1,C50performance1[1,3], C50performance1[2,3], C50performance1[3,3], C50performance1[4,3], C50performance2[2,3], C50performance1[5,3], NBperformance1[1,3], NBperformance1[2,3], NBperformance1[3,3], NBperformance1[4,3], NBperformance2[2,3], NBperformance1[5,3], NNperformance1[1,3], NNperformance1[2,3], NNperformance1[3,3], NNperformance1[4,3], NNperformance2[2,3], NNperformance1[5,3])
+tab2[nrow(tab2)+1,] = c(nrow(tab2)+1,C50performance1[1,3], C50performance1[2,3], C50performance1[3,3], C50performance1[4,3], C50performance2[2,3], C50performance1[5,3], NBperformance1[1,3], NBperformance1[2,3], NBperformance1[3,3], NBperformance1[4,3], NBperformance2[2,3], NBperformance1[5,3], NNperformance1[1,3], NNperformance1[2,3], NNperformance1[3,3], NNperformance1[4,3], NNperformance2[2,3], NNperformance1[5,3], RFperformance1[1,3], RFperformance1[2,3], RFperformance1[3,3], RFperformance1[4,3], RFperformance2[2,3], RFperformance1[5,3], SVMperformance1[1,3], SVMperformance1[2,3], SVMperformance1[3,3], SVMperformance1[4,3], SVMperformance2[2,3], SVMperformance1[5,3])
 
 #ONLY AFTER >4 rows in both tables have been filled
 #merge tables
