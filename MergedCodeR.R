@@ -16,7 +16,7 @@ tab <- data.frame(tab)
 tab = tab[-c(1),]
 #ONLY RUN ONCE!!!! 
 #create table to gather the performance metrics
-tab2 <- matrix(nrow = 1, ncol = 18)
+tab2 <- matrix(nrow = 1, ncol = 31)
 tab2 <- data.frame(tab2)
 tab2 = tab2[-c(1),]
 
